@@ -27,18 +27,33 @@ def plot_time_dat2(filename):
     p.xlabel(r"Time [s]", fontsize = 12)
     p.ylabel(r"CO [ppm]", fontsize = 12)
 
-    p.plot(timeline,T1,lw=3)
+
+
+    #p.plot(timeline,T1,lw=3)
     #p.plot(timeline,T2,lw=3)
-    p.plot(timeline,T3,lw=2)
+    #p.plot(timeline,T3,lw=2)
     #p.plot(timeline,T4,lw=2)
     #p.plot(timeline,T5,lw=1)
     #p.plot(timeline,T6,lw=1)
     #p.plot(timeline,T7,lw=1)
-    p.plot(timeline,(T8+5+T6)/2.,lw=1) # (T8+5+T6)/2 Neue Leittemperatur!!
+    #p.plot(timeline,(T8+5+T6)/2.,lw=1) # (T8+5+T6)/2 Neue Leittemperatur!!
+
+    # Berechne delta T
     LeitTemp = (T8+5+T6)/2
-    dT1 = T1-LeitTemp
-    dT2 = LeitTemp-T3
-    p.plot(timeline, (dT1-dT2)/N.log(N.abs(dT1/dT2)))
+    dT1      = (T1-LeitTemp).clip(min=0.0000001)
+    dT2      = (LeitTemp-T3).clip(min=0.00000001)
+
+    def safe_ln(x, minval=0.0000000001):
+        return N.log(x.clip(min=minval))
+
+    deltaT   =  (dT1-dT2)/safe_ln((dT1/dT2)+0.00001)
+
+    T3_2 = savitzky_golay(T3, window_size=151, order=4,deriv=0)
+    T3_2d = savitzky_golay(T3_2, window_size=51, order=3,deriv=1)
+    #p.plot(timeline, deltaT )
+    p.plot(timeline, savitzky_golay(deltaT,window_size=41,order=3,deriv=0))
+    #p.plot(timeline, dT1/dT2)
+    #p.plot(timeline, dT1-dT2)
     #p.plot(timeline,CO_Value(CO)*3,lw=1)
 
 
