@@ -4,16 +4,21 @@ Created on 14.02.2012
 
 @author: admin
 '''
+from Queue import Queue
 import socket
-import numpy as N
-from matplotlib.mlab import normpdf
-from numpy.core.umath import absolute
-import pylab as p
-from scipy import *
+from threading import Thread
+import threading
+import time
 import sys
 import types
+
+import numpy as N
+import pylab as p
+from scipy import *
 from scipy.integrate import simps
 import xlwt
+
+from HWS import DatenQueue
 from vorlage import CO_Value, datei_name
 
 
@@ -314,3 +319,64 @@ def GetData(get_host,get_Port,send_data):
     data = s.recv(1024)
     s.close()
     return data[1:]
+
+
+class Save_data(Thread):
+    def Legende(self, probe):
+        self.plat = {"win32": "\r", "linux": "\n", "linux2": "\n"}
+        self.platform = sys.platform
+        # Datenkopfschreiben
+        savefile = open(self.filename, 'a')
+        savefile.write('" Probenname : ' + probe + self.plat[self.platform])
+        savefile.write('" Datum : ' + time.strftime("%d.%m.%Y um %H:%M:%S Uhr") + self.plat[self.platform])
+        savefile.write('" ------------------------------------------------' + self.plat[self.platform])
+        savefile.write('"1 : Zeit in Sekunden' + self.plat[self.platform])
+        savefile.write(
+            '"2 : Temperaturdifferenz zwischen Ofen und Probe (die Regelgröße NICHT die tatsächliche Differenz)' +
+            self.plat[self.platform])
+        savefile.write('"3 : T1 Ofentemperatur direkt an der Heizung' + self.plat[self.platform])
+        savefile.write('"4 : T2 Temperatur in der Probenhälfte' + self.plat[self.platform])
+        savefile.write('"5 : T3 Temperatur in der Probenmitte' + self.plat[self.platform])
+        savefile.write('"6 : T4 Ablufttemperatur' + self.plat[self.platform])
+        savefile.write('"7 : T5 Temperatur an der Heizung' + self.plat[self.platform])
+        savefile.write('"8 : T6 Temperatur irgendwo im Ofenraum' + self.plat[self.platform])
+        savefile.write('"9 :  T7 Temperatur irgendwo im Ofenraum' + self.plat[self.platform])
+        savefile.write('"10 :  T8 Ofentemperatur (dickes Thermoelement)' + self.plat[self.platform])
+        savefile.write('"11 : CO-Wert (muss noch umgerechnet werden)' + self.plat[self.platform])
+        savefile.write('" --- +20C alle 2*60*60 Sekunden ------------------------------' + self.plat[self.platform])
+        savefile.close()
+
+    def __init__(self, filename, probe, data_me):
+        Thread.__init__(self)
+        self.filename = filename
+        self.probe = probe
+        self.data_me = data_me
+        self.status = 0
+        self.running = True
+        self.datastr = ''
+        self.stoprequest = threading.Event()
+        self.Legende(probe)
+
+    def join(self, timeout=None):
+        self.stoprequest.set()
+
+    def stop_Rec(self):
+        self.running = False
+
+    def run(self):
+
+        while not self.stoprequest.isSet():
+            try:
+                self.datastr = DatenQueue.get(True, timeout=25)
+                if self.datastr <> 'STOP':
+                    savefile = open(self.filename, 'a')
+                    savefile.write(self.datastr.strip() + self.plat[self.platform])
+                    savefile.close()
+                else:
+                    self.join()
+
+                self.status = 0
+
+            except Queue.empty:
+                pass
+        print ' Save_Ende '

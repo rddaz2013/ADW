@@ -9,9 +9,8 @@ import sys
 
 plat={"win32":"\r\n","linux":"\n","linux2":"\n"}
 platform = sys.platform
-print platform        
-        
-import socket
+print platform
+
 import time
 import threading
 from threading import Thread,Lock
@@ -24,35 +23,6 @@ import platform
 DatenQueue = Queue()
 SPQueue = Queue()
 lock = Lock()
-
-def read_array(data_str, dtype, separator=';', linekick='"'):
-
-    """ Read a file with an arbitrary number of columns.
-        The type of data in each column is arbitrary
-        It will be cast to the given dtype at runtime
-
-        RD
-        Modifiziert um String zu lesen
-    """
-    cast = N.cast
-    data = [[] for dummy in xrange(len(dtype))]
-    fields = data_str.strip().split(separator)
-    for i, number in enumerate(fields):
-        data[i].append(number)
-    for i in xrange(len(dtype)):
-        data[i] = cast[dtype[i]](data[i])
-    return N.rec.array(data, dtype=dtype)
-
-def GetData(get_host,get_Port,send_data):
-    # Sendet den Komandostring zum Modul
-    # Wertet die Rueckantwort nicht aus!!
-    data =''
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect((get_host, get_Port))
-    s.send(send_data)
-    data = s.recv(1024)
-    s.close()
-    return data[1:]
 
 class I7017_Getdata(Thread):
     def __init__ (self,ip,port,delta_temp):
@@ -206,76 +176,6 @@ class I7017_Getdata(Thread):
             #    #DatenQueue
                 self.join()
         print 'Main-Thread_Ende'
-
-                
-                
-                
-
-class Save_data(Thread):
-    def __init__ (self,filename,probe,data_me):
-        Thread.__init__(self)
-        self.filename = filename
-        self.probe = probe
-        self.data_me = data_me
-        self.status = 0
-        self.running = True
-        self.datastr = ''
-        self.stoprequest = threading.Event()
-        self.plat={"win32":"\r\n","linux":"\n","linux2":"\n"}
-        self.platform = sys.platform
-        
-        # Datenkopfschreiben
-        savefile=open(self.filename, 'a')
-
-        savefile.write('" Probenname : '+probe+self.plat[self.platform])
-        savefile.write('" Datum : '+time.strftime("%d.%m.%Y um %H:%M:%S Uhr")+self.plat[self.platform])
-        savefile.write('" ------------------------------------------------'+self.plat[self.platform])
-        savefile.write('"1 : Zeit in Sekunden'+self.plat[self.platform])
-        savefile.write('"2 : Temperaturdifferenz zwischen Ofen und Probe (die Regelgröße NICHT die tatsächliche Differenz)'+self.plat[self.platform])
-        savefile.write('"3 : T1 Ofentemperatur direkt an der Heizung'+self.plat[self.platform])
-        savefile.write('"4 : T2 Temperatur in der Probenhälfte'+self.plat[self.platform])
-        savefile.write('"5 : T3 Temperatur in der Probenmitte'+self.plat[self.platform])
-        savefile.write('"6 : T4 Ablufttemperatur'+chr(10))
-        savefile.write('"7 : T5 Temperatur irgendwo im Ofenraum'+self.plat[self.platform])
-        savefile.write('"8 : T6 Temperatur irgendwo im Ofenraum'+self.plat[self.platform])
-        savefile.write('"9 :  T7 Temperatur irgendwo im Ofenraum'+self.plat[self.platform])
-        savefile.write('"10 : frei'+chr(10))
-        savefile.write('"11 : CO-Wert (muss noch umgerechnet werden)'+self.plat[self.platform])
-        savefile.write('" ---Keine Steuerung--------------------------------'+self.plat[self.platform])
-        savefile.close()
-        
-    def join(self, timeout=None):     
-        self.stoprequest.set()
-
-    def stop_Rec(self):
-        self.running = False
-
-    def run(self):
-        
-        # As long as we weren't asked to stop, try to take new tasks from the
-        # queue. The tasks are taken with a blocking 'get', so no CPU
-        # cycles are wasted while waiting.
-        # Also, 'get' is given a timeout, so stoprequest is always checked,
-        # even if there's nothing in the queue.
-        while not self.stoprequest.isSet():
-            try:
-                self.datastr = DatenQueue.get(True,timeout=25)
-                if self.datastr<>'STOP':
-                    savefile=open(self.filename, 'a')
-                    savefile.write(self.datastr.strip()+self.plat[self.platform])
-                    savefile.close()
-                    print self.datastr.strip()
-                else:
-                    self.join() 
-                   
-                self.status=0
-                
-                #dirname = self.dir_q.get(True, 0.05)
-                #filenames = list(self._files_in_dir(dirname))
-                #self.result_q.put((self.name, dirname, filenames))
-            except Queue.empty:
-                pass
-        print ' Save_Ende '
             
 class Set_SP(Thread):
     def __init__ (self):

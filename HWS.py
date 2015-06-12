@@ -28,7 +28,7 @@ from Queue import Queue
 
 import numpy as N
 from helper.regler import PID
-from helper.AuswertH import read_array2, GetData
+from helper.AuswertH import read_array2, GetData, Save_data
 
 import platform
 
@@ -116,25 +116,8 @@ class I7017_Getdata(Thread):
             data_str= data_str.replace('+',' ; +')
             data_str= data_str.replace('-',' ; -')
 
-            # Fuer Debug-Zwecke Daten nochmal auf die Konsole posten
-            #print Linseis[0][0]
-
-            #T1 - Ofenheizung
-            #T2 - Probe Halb
-            #T3 - Probe Mitte
-            #T4 - Abluft-Temp
-            
-            #T5 - T8 Ofenelemente
-            # CO-Rechnungswert (Umrechnung muss erfolgen)
             mydescr = N.dtype([('Zeit', 'float'), ('Delta', 'float'),('T1', 'float'), ('T2', 'float'), ('T3', 'float'),('T4', 'float'),('T5', 'float'), ('T6', 'float'), ('T7', 'float'),('T8', 'float')])
             myrecarray = read_array2(data_str, mydescr)
-
-            # T3 Probe
-            # T4 Regelthermoelement
-            # T1 Heizung
-            # T7 Probe Rand
-            # T2 Probe Halb
-
 
             # Änderung des PID reglers
             # wenn myrecarray['T3'][0]+self.delta_temp > myrecarray['T4'][0]
@@ -142,20 +125,6 @@ class I7017_Getdata(Thread):
             Check_delta = myrecarray['T1'][0] - myrecarray['T3'][0]
             # Änderung myrecarray['T4'][0] ist jetzt Ablufttemp!!.
             Med_Temp = (myrecarray['T8'][0] +5 +myrecarray['T6'][0])/2
-
-            # Aenderung keine Kickwert-Mehr
-            # Wenn die all. Ofentemperatur die Probentemperatur unterschreitet
-            # ein wenig mehr Temperaturoffset und schneller Nachregeln
-            #if myrecarray['T1'][0]>50:
-            #    if (Med_Temp-5) < ((myrecarray['T3'][0]+myrecarray['T2'][0])/2):
-            #        self.kick = self.kick + 1
-            #        p1.setKp(3)
-            #        p1.setKi(3/160)
-            #        if self.kick > 50:
-            #            self.kick = 50
-            #    else:
-            #        self.kick = 0
-
 
             p1.setPoint2(self.delta_temp + self.kick)
             self.PID_Error = p1.update(Check_delta)
@@ -166,10 +135,7 @@ class I7017_Getdata(Thread):
             if SP_Point>350:
                 SP_Point=350
 
-            #print SP_Point,PID_Error,Check_delta,self.kick,Med_Temp
-
             data_str1= '%s ; %.1f'%(data_str[:len(data_str)-2],Linseis[0][1])
-            #print Linseis[0][0],Linseis[0][1]
             SPQueue.put(SP_Point)
             DatenQueue.put(data_str1+self.plat[self.platform])
 
@@ -185,72 +151,6 @@ class I7017_Getdata(Thread):
         print 'Main-Thread_Ende'
 
 
-class Save_data(Thread):
-    def __init__ (self,filename,probe,data_me):
-        Thread.__init__(self)
-        self.filename = filename
-        self.probe = probe
-        self.data_me = data_me
-        self.status = 0
-        self.running = True
-        self.datastr = ''
-        self.stoprequest = threading.Event()
-        self.plat={"win32":"\r","linux":"\n","linux2":"\n"}
-        self.platform = sys.platform
-        
-        # Datenkopfschreiben
-        savefile=open(self.filename, 'a')
-
-        savefile.write('" Probenname : '+probe+self.plat[self.platform])
-        savefile.write('" Datum : '+time.strftime("%d.%m.%Y um %H:%M:%S Uhr")+self.plat[self.platform])
-        savefile.write('" ------------------------------------------------'+self.plat[self.platform])
-        savefile.write('"1 : Zeit in Sekunden'+self.plat[self.platform])
-        savefile.write('"2 : Temperaturdifferenz zwischen Ofen und Probe (die Regelgröße NICHT die tatsächliche Differenz)'+self.plat[self.platform])
-        savefile.write('"3 : T1 Ofentemperatur direkt an der Heizung'+self.plat[self.platform])
-        savefile.write('"4 : T2 Temperatur in der Probenhälfte'+self.plat[self.platform])
-        savefile.write('"5 : T3 Temperatur in der Probenmitte'+self.plat[self.platform])
-        savefile.write('"6 : T4 Ablufttemperatur'+chr(10))
-        savefile.write('"7 : T5 Temperatur irgendwo im Ofenraum'+self.plat[self.platform])
-        savefile.write('"8 : T6 Temperatur irgendwo im Ofenraum'+self.plat[self.platform])
-        savefile.write('"9 :  T7 Temperatur irgendwo im Ofenraum'+self.plat[self.platform])
-        savefile.write('"10 : frei'+chr(10))
-        savefile.write('"11 : CO-Wert (muss noch umgerechnet werden)'+self.plat[self.platform])
-        savefile.write('" ---Keine Steuerung--------------------------------'+self.plat[self.platform])
-        savefile.close()
-        
-    def join(self, timeout=None):     
-        self.stoprequest.set()
-
-    def stop_Rec(self):
-        self.running = False
-
-    def run(self):
-        
-        # As long as we weren't asked to stop, try to take new tasks from the
-        # queue. The tasks are taken with a blocking 'get', so no CPU
-        # cycles are wasted while waiting.
-        # Also, 'get' is given a timeout, so stoprequest is always checked,
-        # even if there's nothing in the queue.
-        while not self.stoprequest.isSet():
-            try:
-                self.datastr = DatenQueue.get(True,timeout=25)
-                if self.datastr<>'STOP':
-                    savefile=open(self.filename, 'a')
-                    savefile.write(self.datastr.strip()+self.plat[self.platform])
-                    savefile.close()
-                    #print self.datastr.strip()
-                else:
-                    self.join() 
-                   
-                self.status=0
-                
-                #dirname = self.dir_q.get(True, 0.05)
-                #filenames = list(self._files_in_dir(dirname))
-                #self.result_q.put((self.name, dirname, filenames))
-            except Queue.empty:
-                pass
-        print ' Save_Ende '
-            
 class Set_SP(Thread):
     def __init__ (self):
         Thread.__init__(self)
@@ -269,8 +169,6 @@ class Set_SP(Thread):
 
         if platform.system()=='Linux':
              self.starttime0 = time.time()
-
-        #self.Prog = [3000,40]
 
     def join(self, timeout=None):
         self.stoprequest.set()
