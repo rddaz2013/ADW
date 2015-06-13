@@ -18,7 +18,6 @@ from scipy import *
 from scipy.integrate import simps
 import xlwt
 
-from HWS import DatenQueue
 from vorlage import CO_Value, datei_name
 
 
@@ -380,3 +379,6 @@ class Save_data(Thread):
             except Queue.empty:
                 pass
         print ' Save_Ende '
+
+
+DatenQueue = Queue()

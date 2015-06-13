@@ -73,7 +73,6 @@ def plot_time_dat2(filename):
     #print integrate_Peak(timeline,CO_Value(CO),21400,21700) # niedrige Luefterstufe + 400L/h zuluft + Dämpfer + Umbau Lüfterleitung
     #print integrate_Peak(timeline,CO_Value(CO),22000,22200) # niedrige Luefterstufe + Umbau Lüfterleitung
 
-
 datei_name = "TL9582_3x.asc"
 plot_time_dat2(datei_name)
 p.show()
