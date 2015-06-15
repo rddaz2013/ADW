@@ -201,7 +201,7 @@ class Set_SP(Thread):
                 self.datastr_dummy = SPQueue.get(True, timeout=15)
 
                 if (self.starttime1 - self.starttime0) > 2 * 60 * 60:
-                    self.datastr = SPQueue.get(True, timeout=15)
+                    self.datastr_dummy = SPQueue.get(True, timeout=15)
                     self.datastr = self.datastr + 20.
                     self.starttime0 = self.starttime1
 
