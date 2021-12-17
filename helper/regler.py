@@ -40,9 +40,7 @@ class PID:
 
 		self.I_value = self.Integrator * self.Ki
 
-		PID = self.P_value + self.I_value + self.D_value
-
-		return PID
+		return self.P_value + self.I_value + self.D_value
 
 	def setPoint(self,set_point):
 		"""

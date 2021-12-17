@@ -20,5 +20,4 @@ show_co = True
 
 # Umrechnung fur den CO-Wert
 def CO_Value(Li_Wert):
-    Value_CO = ((0.00028*Li_Wert+4.5)*10.0)+0.85
-    return Value_CO
+    return ((0.00028*Li_Wert+4.5)*10.0)+0.85
