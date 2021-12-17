@@ -37,29 +37,27 @@ def Kin_Umsatz(temp):
 
     :param temp:
     '''
-    if Stoffdaten['Model']=='Ozawa':
-        k = np.exp(Stoffdaten['LnA'])*(temp+273)**Stoffdaten['O_factor']*np.exp(-Stoffdaten['Ea']/(temp+273.15))
-    else:
-        k = np.exp(Stoffdaten['LnA'])*np.exp(-Stoffdaten['Ea']/(temp+273.15))
-    return k
+    return (
+        np.exp(Stoffdaten['LnA'])
+        * (temp + 273) ** Stoffdaten['O_factor']
+        * np.exp(-Stoffdaten['Ea'] / (temp + 273.15))
+        if Stoffdaten['Model'] == 'Ozawa'
+        else np.exp(Stoffdaten['LnA'])
+        * np.exp(-Stoffdaten['Ea'] / (temp + 273.15))
+    )
 
 def f(y,t):
-     Probe_T = y[0]
-     Ausen_T = y[1]
-     beta = y[2]
-     f3 = Kin_Umsatz(Probe_T)*(1-y[3])
-     '''
+    Probe_T = y[0]
+    Ausen_T = y[1]
+    beta = y[2]
+    f3 = Kin_Umsatz(Probe_T)*(1-y[3])
+    '''
      Einheit der Ausgabe ist f0 = k in [K/min] * Reaktionswaerme/cp fuer Umsatz !
      '''
-     f0 = (beta * (Ausen_T-Probe_T)) + (f3 * Stoffdaten['Reac_Heat']/Stoffdaten['cp'])
-     if t>233:
-         f1 = Simdaten['Ofen_mx']
-         #if Probe_T>400.:
-         #    f1 = 0.
-     else:
-         f1 = 0.
-     f2 = 0
-     return [f0,f1,f2,f3]
+    f0 = (beta * (Ausen_T-Probe_T)) + (f3 * Stoffdaten['Reac_Heat']/Stoffdaten['cp'])
+    f1 = Simdaten['Ofen_mx'] if t>233 else 0.
+    f2 = 0
+    return [f0,f1,f2,f3]
 
 def Sim_Block(filename,Save_File):
     t=arange(0.0,Simdaten['End_Time'],Simdaten['Step_Time'])

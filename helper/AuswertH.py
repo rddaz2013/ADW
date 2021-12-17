@@ -176,7 +176,7 @@ def reduce_data(filename):
 
     d=0
     while N.size(myrecarray, 0)-2>d:
-        d = d + 1
+        d += 1
         del_value=True
 
         if abs(myrecarray[d][4]-temp_value)>3:
@@ -189,7 +189,7 @@ def reduce_data(filename):
 
         if del_value:
             myrecarray = N.delete(myrecarray, d, 0)
-            d = d - 1
+            d -= 1
 
     T3 = myrecarray['T3']
     T3_k =  1000/(T3+273.15)
@@ -206,8 +206,7 @@ def integrate_Peak(x,y,startx,endx):
     end_idx = N.where(x > endx)[0][0]
     piece_x = x[start_idx:end_idx]
     piece_y= y[start_idx:end_idx]
-    piece_area = simps(piece_y,piece_x)
-    return piece_area
+    return simps(piece_y,piece_x)
 
 
 def export2xls(filename):
@@ -324,26 +323,24 @@ class Save_data(Thread):
     def Legende(self, probe):
         self.plat = {"win32": "\r", "linux": "\n", "linux2": "\n"}
         self.platform = sys.platform
-        # Datenkopfschreiben
-        savefile = open(self.filename, 'a')
-        savefile.write('" Probenname : ' + probe + self.plat[self.platform])
-        savefile.write('" Datum : ' + time.strftime("%d.%m.%Y um %H:%M:%S Uhr") + self.plat[self.platform])
-        savefile.write('" ------------------------------------------------' + self.plat[self.platform])
-        savefile.write('"1 : Zeit in Sekunden' + self.plat[self.platform])
-        savefile.write(
-            '"2 : Temperaturdifferenz zwischen Ofen und Probe (die Regelgröße NICHT die tatsächliche Differenz)' +
-            self.plat[self.platform])
-        savefile.write('"3 : T1 Ofentemperatur direkt an der Heizung' + self.plat[self.platform])
-        savefile.write('"4 : T2 Temperatur in der Probenhälfte' + self.plat[self.platform])
-        savefile.write('"5 : T3 Temperatur in der Probenmitte' + self.plat[self.platform])
-        savefile.write('"6 : T4 Ablufttemperatur' + self.plat[self.platform])
-        savefile.write('"7 : T5 Temperatur an der Heizung' + self.plat[self.platform])
-        savefile.write('"8 : T6 Temperatur irgendwo im Ofenraum' + self.plat[self.platform])
-        savefile.write('"9 :  T7 Temperatur irgendwo im Ofenraum' + self.plat[self.platform])
-        savefile.write('"10 :  T8 Ofentemperatur (dickes Thermoelement)' + self.plat[self.platform])
-        savefile.write('"11 : CO-Wert (muss noch umgerechnet werden)' + self.plat[self.platform])
-        savefile.write('" --- +20C alle 2*60*60 Sekunden ------------------------------' + self.plat[self.platform])
-        savefile.close()
+        with open(self.filename, 'a') as savefile:
+            savefile.write('" Probenname : ' + probe + self.plat[self.platform])
+            savefile.write('" Datum : ' + time.strftime("%d.%m.%Y um %H:%M:%S Uhr") + self.plat[self.platform])
+            savefile.write('" ------------------------------------------------' + self.plat[self.platform])
+            savefile.write('"1 : Zeit in Sekunden' + self.plat[self.platform])
+            savefile.write(
+                '"2 : Temperaturdifferenz zwischen Ofen und Probe (die Regelgröße NICHT die tatsächliche Differenz)' +
+                self.plat[self.platform])
+            savefile.write('"3 : T1 Ofentemperatur direkt an der Heizung' + self.plat[self.platform])
+            savefile.write('"4 : T2 Temperatur in der Probenhälfte' + self.plat[self.platform])
+            savefile.write('"5 : T3 Temperatur in der Probenmitte' + self.plat[self.platform])
+            savefile.write('"6 : T4 Ablufttemperatur' + self.plat[self.platform])
+            savefile.write('"7 : T5 Temperatur an der Heizung' + self.plat[self.platform])
+            savefile.write('"8 : T6 Temperatur irgendwo im Ofenraum' + self.plat[self.platform])
+            savefile.write('"9 :  T7 Temperatur irgendwo im Ofenraum' + self.plat[self.platform])
+            savefile.write('"10 :  T8 Ofentemperatur (dickes Thermoelement)' + self.plat[self.platform])
+            savefile.write('"11 : CO-Wert (muss noch umgerechnet werden)' + self.plat[self.platform])
+            savefile.write('" --- +20C alle 2*60*60 Sekunden ------------------------------' + self.plat[self.platform])
 
     def __init__(self, filename, probe, data_me):
         Thread.__init__(self)
